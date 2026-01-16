@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Login — FoodAllergyDetect</title>
+  <style>
+    :root{
+      --bg:#06090d; --panel:#0f1720; --muted:#9aa6b2;
+      --accent:#2bb0ff; --accent-2:#1b7ed6; --radius:14px;
+      --glass: rgba(255,255,255,0.02);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,#03050a,var(--bg));color:#eaf4ff}
+    .page{min-height:100vh;display:flex;flex-direction:column}
+    header{display:flex;align-items:center;justify-content:space-between;padding:18px 28px;border-bottom:1px solid rgba(255,255,255,0.03);backdrop-filter: blur(4px)}
+    .brand{display:flex;gap:14px;align-items:center}
+    .logo{width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,var(--accent-2),var(--accent));display:flex;align-items:center;justify-content:center;color:#021427;font-weight:800}
+    .site-title{font-size:18px;margin:0}
+    .subtitle{font-size:12px;color:var(--muted);margin-top:2px}
+    main{flex:1;display:flex;align-items:center;justify-content:center;padding:36px}
+    .container{width:100%;max-width:980px;display:grid;grid-template-columns:480px 1fr;gap:28px;padding:28px}
+    .card{background:linear-gradient(180deg,var(--glass),rgba(255,255,255,0.01));border-radius:var(--radius);padding:28px;border:1px solid rgba(255,255,255,0.04);box-shadow:0 10px 30px rgba(2,6,23,0.6)}
+    h1{margin:0;font-size:22px}
+    .lead{color:var(--muted);margin-top:8px;font-size:13px}
+    label{display:block;color:var(--muted);font-size:13px;margin-bottom:8px}
+    input[type="text"],input[type="password"]{width:100%;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:#071018;color:#eaf4ff;font-size:14px}
+    .btn{display:inline-block;background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#021427;padding:10px 14px;border-radius:10px;border:none;font-weight:700;cursor:pointer;margin-top:12px;width:100%;box-shadow:0 8px 22px rgba(43,176,255,0.12)}
+    .muted-link{display:block;text-align:center;margin-top:12px;color:var(--muted);font-size:13px}
+    .help{color:var(--muted);font-size:13px;margin-top:10px}
+    footer{padding:14px 28px;border-top:1px solid rgba(255,255,255,0.03);text-align:center;color:var(--muted);font-size:13px}
+    /* right side */
+    .promo{display:flex;flex-direction:column;gap:12px;justify-content:center}
+    .promo h3{margin:0;font-size:16px}
+    .promo p{margin:0;color:var(--muted)}
+    .feature{display:flex;gap:10px;align-items:flex-start;padding:10px;border-radius:10px;background:rgba(255,255,255,0.01);border:1px solid rgba(255,255,255,0.02)}
+    .feature svg{flex-shrink:0}
+    @media(max-width:980px){.container{grid-template-columns:1fr;padding:18px}}
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <div class="brand">
+        <div class="logo">FA</div>
+        <div>
+          <div class="site-title">FoodAllergyDetect</div>
+          <div class="subtitle">Scan labels • Stay safe</div>
+        </div>
+      </div>
+      <nav style="display:flex;gap:12px;align-items:center">
+        <a style="color:var(--muted);text-decoration:none;font-size:14px" href="{{ url_for('register') }}">Create account</a>
+      </nav>
+    </header>
+
+    <main>
+      <div class="container">
+        <div class="card">
+          <h1>Welcome back</h1>
+          <div class="lead">Sign in to manage your allergy profile and scan product ingredients.</div>
+
+          <form method="POST" action="{{ url_for('login') }}" style="margin-top:18px">
+            <div style="margin-bottom:12px">
+              <label for="username">Username</label>
+              <input id="username" name="username" type="text" required autocomplete="username" />
+            </div>
+
+            <div style="margin-bottom:6px">
+              <label for="password">Password</label>
+              <input id="password" name="password" type="password" required autocomplete="current-password" />
+            </div>
+
+            <button class="btn" type="submit">Sign in</button>
+          </form>
+
+          <div class="help">Don't have an account? <a style="color:var(--accent);text-decoration:none" href="{{ url_for('register') }}">Create one</a></div>
+        </div>
+
+        <aside class="card promo">
+          <h3>Why use FoodAllergyDetect?</h3>
+          <p class="lead">Quick scans, clear warnings and personalized alerts based on your saved allergies.</p>
+
+          <div class="feature">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" style="opacity:0.95"><path d="M12 2L12 12" stroke="#2bb0ff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="16" r="4" stroke="#1b7ed6" stroke-width="1.6"/></svg>
+            <div>
+              <strong>Fast OCR</strong>
+              <div style="color:var(--muted);font-size:13px">Optimized preprocessing for labels.</div>
+            </div>
+          </div>
+
+          <div class="feature">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M3 12h18" stroke="#2bb0ff" stroke-width="1.6" stroke-linecap="round"/><path d="M6 7v10" stroke="#1b7ed6" stroke-width="1.6"/></svg>
+            <div>
+              <strong>Hybrid detection</strong>
+              <div style="color:var(--muted);font-size:13px">Rule-based + ML model for best accuracy.</div>
+            </div>
+          </div>
+
+        </aside>
+      </div>
+    </main>
+
+    <footer>
+      © {{ (2025) }} FoodAllergyDetect — Built for B.Tech final project • Dark theme
+    </footer>
+  </div>
+</body>
+</html>

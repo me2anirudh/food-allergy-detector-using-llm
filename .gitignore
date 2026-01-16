@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+.env
+
+# Node / React
+node_modules/
+build/
+
+# OS
+.DS_Store
+
+# OCR temp
+uploads/
+
+# Database backups
+*.sqlite
+*.db-journal

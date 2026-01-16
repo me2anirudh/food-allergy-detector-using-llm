@@ -1,0 +1,263 @@
+body {
+  margin: 0;
+  font-family: Inter, 'Segoe UI', Arial, Helvetica, sans-serif;
+  background: linear-gradient(180deg, #f3fff6 0%, #e9fff0 100%);
+}
+
+/* Center helper */
+.center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.page {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+}
+
+.card {
+  background: #ffffff;
+  padding: 32px;
+  width: 420px;
+  border-radius: 14px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+  text-align: center;
+  border: 1px solid rgba(27, 127, 75, 0.06);
+}
+
+/* Auth specific tweaks */
+.auth-card {
+  width: 380px;
+}
+
+h2 {
+  margin-bottom: 6px;
+  color: #145c37;
+}
+
+.subtitle {
+  margin-top: 0;
+  margin-bottom: 18px;
+  color: #2f6f48;
+}
+
+input {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 12px;
+  border-radius: 8px;
+  border: 1px solid #dbeedb;
+  background: #fbfffb;
+  outline: none;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+input:focus {
+  border-color: #98d7a6;
+  box-shadow: 0 6px 20px rgba(18, 109, 61, 0.06);
+}
+
+button {
+  width: 100%;
+  padding: 12px;
+  background: #1b7f4b;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.08s ease, background 0.12s ease;
+}
+
+button:hover {
+  background: #16663d;
+  transform: translateY(-1px);
+}
+
+button.secondary {
+  background: #f4f5f6;
+  color: #333;
+  margin-top: 8px;
+}
+
+.result {
+  margin-top: 16px;
+  padding-top: 8px;
+  text-align: left;
+}
+
+.badge {
+  display: inline-block;
+  padding: 10px 14px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+  color: #fff;
+}
+
+.badge.safe {
+  background: #1b7f4b;
+}
+
+.badge.unsafe {
+  background: #b32222;
+  box-shadow: 0 8px 30px rgba(179,34,34,0.18);
+}
+
+.badge.unsafe.pulse {
+  animation: pulse 1200ms ease-out infinite;
+}
+
+.result p {
+  margin-top: 8px;
+  margin-bottom: 0;
+  color: #333;
+  font-weight: 600;
+}
+
+.link {
+  margin-top: 12px;
+  color: #1b7f4b;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* Small helper for image previews */
+img.preview {
+  max-width: 100%;
+  border-radius: 8px;
+  display: block;
+}
+
+/* Navbar */
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.navbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #e9fff0, #d7fbe1);
+  font-size: 20px;
+}
+
+.app-name {
+  font-weight: 700;
+  color: #145c37;
+}
+
+.navbar-right .small {
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+/* Animations */
+.fade-in {
+  animation: fadeIn 220ms ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.pulse {
+  animation: pulse 900ms ease-out;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+  100% { transform: scale(1); }
+}
+
+/* Horizontal card layout (dashboard) */
+.card-body.horizontal {
+  display: flex;
+  gap: 28px;
+  align-items: flex-start;
+}
+
+/* Stacked layout (used for small screens or when we want a single column flow) */
+.card-body.stacked {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.card-left {
+  flex: 1.1;
+  min-width: 0; /* allow child to shrink below content width in flex layout */
+  width: 100%;
+}
+
+.card-right {
+  flex: 0 0 320px;
+  min-width: 0; /* allow wrapping and prevent overflow */
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+}
+
+/* Constrain preview image so it won't push layout or overlap */
+img.preview {
+  display: block;
+  width: 100%;
+  max-height: 360px;
+  object-fit: contain;
+  border-radius: 6px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+}
+
+.card-right .result {
+  width: 100%;
+}
+
+/* Ensure long text wraps and doesn't overflow card */
+.card, .card * {
+  box-sizing: border-box;
+}
+
+.card p, .card .brand-sub, .result p {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+@media (max-width: 800px) {
+  .card-body.horizontal {
+    flex-direction: column;
+  }
+
+  .card-right {
+    flex-basis: auto;
+    width: 100%;
+  }
+}
+
+/* Reduce vertical padding so content fits without scrolling */
+.card {
+  padding: 20px;
+}
+

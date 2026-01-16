@@ -1,0 +1,97 @@
+/* GLOBAL STYLE */
+:root {
+  --bg:#071021;
+  --panel:#0b1620;
+  --accent:#2bb0ff;
+  --accent-2:#1b7ed6;
+  --muted:#9aa6b2;
+  --radius:14px;
+}
+
+html, body {
+  height:100%;
+  margin:0;
+  background:linear-gradient(180deg,#020617,var(--bg));
+  color:#eaf4ff;
+  font-family:Inter,system-ui,Segoe UI,Roboto,Arial;
+}
+
+.page { min-height:100vh; display:flex; flex-direction:column; }
+
+/* HEADER */
+header {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:18px 28px;
+  background:rgba(255,255,255,0.02);
+  border-bottom:1px solid rgba(255,255,255,0.05);
+}
+
+.brand { display:flex; gap:12px; align-items:center; }
+.logo {
+  width:48px; height:48px; border-radius:12px;
+  background:linear-gradient(135deg,var(--accent-2),var(--accent));
+  display:flex; align-items:center; justify-content:center;
+  color:#021427; font-weight:700;
+}
+
+.title { font-size:18px; font-weight:700; }
+.muted { color:var(--muted); font-size:13px; }
+
+/* LAYOUT + CARDS */
+main { max-width:1100px; margin:24px auto; padding:18px; width:100%; flex:1; }
+.grid { display:grid; grid-template-columns:1fr 350px; gap:20px; }
+.card {
+  background:rgba(255,255,255,0.03);
+  padding:20px; border-radius:var(--radius);
+  border:1px solid rgba(255,255,255,0.05);
+}
+
+h1 { margin:0 0 10px 0; }
+
+/* BUTTONS */
+.btn {
+  display:inline-block;
+  background:linear-gradient(90deg,var(--accent),var(--accent-2));
+  padding:10px 16px;
+  border-radius:10px;
+  color:#021427;
+  font-weight:700;
+  text-decoration:none;
+  text-align:center;
+  cursor:pointer;
+}
+
+.btn.secondary {
+  background:transparent !important;
+  border:1px solid rgba(255,255,255,0.2);
+  color:var(--muted);
+}
+
+/* UPLOADER */
+.uploader { display:flex; flex-direction:column; gap:12px; }
+#result { margin-top:14px; }
+
+/* ALERT BOXES */
+.alert {
+  padding:14px;
+  border-radius:10px;
+  font-weight:600;
+  margin-top:10px;
+}
+
+.alert.good { background:rgba(46, 204, 113, 0.2); color:#2ecc71; }
+.alert.bad { background:rgba(231, 76, 60, 0.2); color:#e74c3c; }
+
+/* FOOTER */
+footer {
+  text-align:center;
+  padding:16px;
+  color:var(--muted);
+  border-top:1px solid rgba(255,255,255,0.05);
+}
+
+@media(max-width:900px){
+  .grid { grid-template-columns:1fr; }
+}
