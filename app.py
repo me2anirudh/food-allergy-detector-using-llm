@@ -9,6 +9,7 @@ import os
 import re
 import cv2
 import pytesseract
+pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 import numpy as np
 from PIL import Image
 import joblib
@@ -304,15 +305,94 @@ def predict_image():
         return jsonify({"error": "No image uploaded"}), 400
 
     img = request.files["image"]
+    print("Received image:", img.filename)
     filepath = os.path.join("uploads", img.filename)
     os.makedirs("uploads", exist_ok=True)
     img.save(filepath)
+    print("Saved to:", filepath)
 
     ocr_text = ocr_image(filepath)
+    print("OCR text:", ocr_text[:100])
     result = full_prediction_pipeline(ocr_text)
     result["ocr_raw_text"] = ocr_text
 
     return jsonify(result)
+
+
+@app.route("/save_scan", methods=["POST"])
+def save_scan():
+    print("Save scan called")
+    if "user_id" not in session:
+        print("No user_id in session")
+        return jsonify({"success": False, "message": "Not logged in"}), 401
+
+    data = request.get_json()
+    print("Data:", data)
+    if not data:
+        return jsonify({"success": False, "message": "No data provided"}), 400
+
+    product_name = data.get("product_name")
+    ingredients = data.get("ingredients", "")
+    result = data.get("result")
+    allergens_found = data.get("allergens_found", "")
+
+    if not product_name or not result:
+        return jsonify({"success": False, "message": "Product name and result are required"}), 400
+
+    user_id = session["user_id"]
+    print("User ID:", user_id)
+
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        c.execute("""
+            INSERT INTO scan_history (user_id, product_name, ingredients, result, allergens_found)
+            VALUES (?, ?, ?, ?, ?)
+        """, (user_id, product_name, ingredients, result, allergens_found))
+        conn.commit()
+        conn.close()
+        print("Saved successfully")
+        return jsonify({"success": True})
+    except sqlite3.IntegrityError:
+        print("IntegrityError: Product name exists")
+        return jsonify({"success": False, "message": "Product name already exists"}), 400
+    except Exception as e:
+        print("Error:", str(e))
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@app.route("/get_history", methods=["GET"])
+def get_history():
+    if "user_id" not in session:
+        return jsonify({"success": False, "message": "Not logged in"}), 401
+
+    user_id = session["user_id"]
+
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        c.execute("""
+            SELECT product_name, ingredients, result, allergens_found, timestamp
+            FROM scan_history
+            WHERE user_id = ?
+            ORDER BY timestamp DESC
+        """, (user_id,))
+        rows = c.fetchall()
+        conn.close()
+
+        history = []
+        for row in rows:
+            history.append({
+                "product_name": row[0],
+                "ingredients": row[1],
+                "result": row[2],
+                "allergens_found": row[3],
+                "timestamp": row[4]
+            })
+
+        return jsonify({"success": True, "history": history})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
 
 
 @app.route("/")

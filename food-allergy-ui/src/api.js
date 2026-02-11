@@ -48,6 +48,15 @@ const api = {
       body: fd,
     });
   },
+
+  saveScan: (data) =>
+    apiFetch("/save_scan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    }),
+
+  getHistory: () => apiFetch("/get_history"),
 };
 
 export default api;

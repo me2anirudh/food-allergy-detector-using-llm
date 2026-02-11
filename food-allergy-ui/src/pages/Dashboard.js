@@ -5,6 +5,7 @@ import NavBar from "../components/NavBar";
 
 export default function Dashboard() {
   const [selectedFile, setSelectedFile] = useState(null);
+  const [productName, setProductName] = useState("");
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [userAllergies, setUserAllergies] = useState([]);
@@ -25,11 +26,16 @@ export default function Dashboard() {
     const file = e.target.files[0];
     setSelectedFile(file);
     setResult(null);
+    setProductName("");
   };
 
   const handleScan = async () => {
     if (!selectedFile) {
       alert("Please choose an image first.");
+      return;
+    }
+    if (!productName.trim()) {
+      alert("Please enter a product name.");
       return;
     }
 
@@ -53,7 +59,25 @@ export default function Dashboard() {
         userRisk = saved.filter(a => combined.includes(a));
       }
 
-      setResult({ ...scanJson, user_specific_risk: userRisk });
+      const finalResult = { ...scanJson, user_specific_risk: userRisk };
+      setResult(finalResult);
+
+      // Save to history
+      const isUnsafe = userRisk.length > 0;
+      const saveData = {
+        product_name: productName.trim(),
+        ingredients: scanJson.ocr_raw_text || "",
+        result: isUnsafe ? "UNSAFE" : "SAFE",
+        allergens_found: userRisk.join(", ")
+      };
+
+      const saveRes = await api.saveScan(saveData);
+      const saveJson = await saveRes.json();
+      if (!saveJson.success) {
+        alert(`Scan completed, but failed to save to history: ${saveJson.message}`);
+      } else {
+        alert("Scan completed and saved to history!");
+      }
     } catch (err) {
       console.error(err);
       alert("Scan failed. See console for details.");
@@ -102,6 +126,17 @@ export default function Dashboard() {
                   <div><strong>Selected:</strong> {selectedFile.name}</div>
                   <div style={{ marginTop: 8 }}>
                     <img className="preview" src={URL.createObjectURL(selectedFile)} alt="preview" />
+                  </div>
+                  <div style={{ marginTop: 8 }}>
+                    <label htmlFor="productName">Product Name:</label>
+                    <input
+                      id="productName"
+                      type="text"
+                      value={productName}
+                      onChange={(e) => setProductName(e.target.value)}
+                      placeholder="Enter a unique name for this product"
+                      style={{ width: "100%", marginTop: 4, padding: 8, border: "1px solid #ccc", borderRadius: 4 }}
+                    />
                   </div>
                 </div>
               )}

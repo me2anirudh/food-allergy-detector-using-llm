@@ -3,6 +3,8 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import EditAllergies from "./pages/EditAllergies";
+import EducationalResources from "./pages/EducationalResources";
+import History from "./pages/History";
 
 export default function App() {
   return (
@@ -12,6 +14,8 @@ export default function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/allergies" element={<EditAllergies />} />
+        <Route path="/education" element={<EducationalResources />} />
+        <Route path="/history" element={<History />} />
       </Routes>
     </BrowserRouter>
   );

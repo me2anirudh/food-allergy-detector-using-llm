@@ -22,6 +22,13 @@ export default function NavBar() {
         <div className="app-name">Food Allergy Scanner</div>
       </div>
 
+      <div className="navbar-center">
+        <button className="nav-btn" onClick={() => navigate("/dashboard")}>Dashboard</button>
+        <button className="nav-btn" onClick={() => navigate("/allergies")}>Edit Allergies</button>
+        <button className="nav-btn" onClick={() => navigate("/education")}>Education</button>
+        <button className="nav-btn" onClick={() => navigate("/history")}>History</button>
+      </div>
+
       <div className="navbar-right">
         <button className="secondary small" onClick={logout}>Logout</button>
       </div>

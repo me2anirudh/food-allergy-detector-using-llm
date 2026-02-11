@@ -12,6 +12,20 @@ CREATE TABLE IF NOT EXISTS users (
 )
 """)
 
+c.execute("""
+CREATE TABLE IF NOT EXISTS scan_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    product_name TEXT NOT NULL,
+    ingredients TEXT,
+    result TEXT NOT NULL,  -- 'SAFE' or 'UNSAFE'
+    allergens_found TEXT,  -- comma-separated
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users (id),
+    UNIQUE(user_id, product_name)
+)
+""")
+
 conn.commit()
 conn.close()
 
