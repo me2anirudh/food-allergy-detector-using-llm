@@ -7,6 +7,8 @@ export default function Dashboard() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [productName, setProductName] = useState("");
   const [result, setResult] = useState(null);
+  const [aiAdvice, setAiAdvice] = useState(null);
+  const [loadingAdvice, setLoadingAdvice] = useState(false);
   const [loading, setLoading] = useState(false);
   const [userAllergies, setUserAllergies] = useState([]);
   const navigate = useNavigate();
@@ -77,12 +79,42 @@ export default function Dashboard() {
         alert(`Scan completed, but failed to save to history: ${saveJson.message}`);
       } else {
         alert("Scan completed and saved to history!");
+        
+        // Get AI advice after saving
+        await getAIAdvice(userRisk, saved);
       }
     } catch (err) {
       console.error(err);
       alert("Scan failed. See console for details.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const getAIAdvice = async (allergens, allergies) => {
+    if (allergens.length === 0) {
+      setAiAdvice("No allergens detected. This product is safe for you!");
+      return;
+    }
+
+    setLoadingAdvice(true);
+    try {
+      const adviceRes = await api.getAIAdvice({
+        allergens_found: allergens.join(", "),
+        product_name: productName.trim(),
+        user_allergies: allergies.join(", ")
+      });
+      const adviceJson = await adviceRes.json();
+      if (adviceJson.success) {
+        setAiAdvice(adviceJson.advice);
+      } else {
+        setAiAdvice("Could not generate AI advice. Please try again.");
+      }
+    } catch (err) {
+      console.error(err);
+      setAiAdvice("Error generating AI advice. Please try again.");
+    } finally {
+      setLoadingAdvice(false);
     }
   };
 
@@ -155,6 +187,21 @@ export default function Dashboard() {
                 <div className="result fade-in" role="status" aria-live={ariaLive} style={{ marginTop: 12 }}>
                   <div className={badgeClass}>{verdict.status}</div>
                   <p style={{ marginTop: 8, marginBottom: 0 }}>{verdict.msg}</p>
+                  
+                  {/* AI Advice Section */}
+                  {loadingAdvice && (
+                    <div style={{ marginTop: 12, padding: 10, background: "#f0f8ff", borderRadius: 4, borderLeft: "4px solid #1b7f4b" }}>
+                      <p style={{ margin: 0, color: "#666", fontStyle: "italic" }}>🤖 Getting AI advice...</p>
+                    </div>
+                  )}
+                  
+                  {aiAdvice && !loadingAdvice && (
+                    <div style={{ marginTop: 12, padding: 10, background: "#f0f8ff", borderRadius: 4, borderLeft: "4px solid #1b7f4b" }}>
+                      <p style={{ margin: 0, color: "#1b7f4b", fontSize: 14 }}>
+                        <strong>🤖 AI Assistant:</strong> {aiAdvice}
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

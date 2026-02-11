@@ -57,6 +57,13 @@ const api = {
     }),
 
   getHistory: () => apiFetch("/get_history"),
+
+  getAIAdvice: (data) =>
+    apiFetch("/get_ai_advice", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    }),
 };
 
 export default api;

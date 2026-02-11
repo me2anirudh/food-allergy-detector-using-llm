@@ -13,6 +13,11 @@ pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tessera
 import numpy as np
 from PIL import Image
 import joblib
+from dotenv import load_dotenv
+import requests
+
+# Load environment variables from .env
+load_dotenv()
 
 ###############################
 # FLASK APP
@@ -392,6 +397,77 @@ def get_history():
 
         return jsonify({"success": True, "history": history})
     except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@app.route("/get_ai_advice", methods=["POST"])
+def get_ai_advice():
+    """Generate AI advice for allergen detection using Hugging Face"""
+    if "user_id" not in session:
+        return jsonify({"success": False, "message": "Not logged in"}), 401
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"success": False, "message": "No data provided"}), 400
+
+    allergens = data.get("allergens_found", "")
+    product_name = data.get("product_name", "this product")
+    user_allergies = data.get("user_allergies", "")
+
+    if not allergens:
+        return jsonify({"success": True, "advice": "No allergens detected. This product appears to be safe for you!"})
+
+    try:
+        api_key = os.getenv("HUGGINGFACE_API_KEY")
+        if not api_key:
+            print("Error: HUGGINGFACE_API_KEY not found in .env")
+            return jsonify({"success": False, "message": "API key not configured"}), 500
+
+        # Use Hugging Face Inference API
+        hf_api_url = "https://api-inference.huggingface.co/models/mistral-community/Mistral-7B-Instruct-v0.1"
+        headers = {"Authorization": f"Bearer {api_key}"}
+
+        # Craft a detailed prompt for the LLM
+        prompt = f"""You are a helpful food allergy expert. A user has scanned a product called '{product_name}' which contains the following allergens: {allergens}.
+
+The user's known allergies are: {user_allergies if user_allergies else 'not specified'}.
+
+Provide a brief, friendly, and practical safety assessment and advice. Include:
+1. Whether the product is safe based on their allergies
+2. Specific risks or concerns
+3. Recommendations or alternatives
+
+Keep the response to 2-3 sentences, conversational and easy to understand."""
+
+        payload = {
+            "inputs": prompt,
+            "parameters": {"max_length": 200, "temperature": 0.7}
+        }
+
+        print(f"Calling Hugging Face API for allergens: {allergens}")
+        response = requests.post(hf_api_url, headers=headers, json=payload, timeout=15)
+        print(f"HF Response status: {response.status_code}")
+
+        if response.status_code == 200:
+            result = response.json()
+            # Extract text from response
+            if isinstance(result, list) and len(result) > 0:
+                advice = result[0].get("generated_text", "")
+                # Remove the prompt from the generated text
+                if prompt in advice:
+                    advice = advice.replace(prompt, "").strip()
+            else:
+                advice = "Unable to generate advice at this time."
+            
+            return jsonify({"success": True, "advice": advice})
+        else:
+            print(f"Hugging Face API error: {response.status_code} - {response.text}")
+            return jsonify({"success": False, "message": "Failed to generate advice"}), 500
+
+    except requests.exceptions.Timeout:
+        return jsonify({"success": False, "message": "AI advice generation timed out. Try again."}), 500
+    except Exception as e:
+        print(f"Error in get_ai_advice: {str(e)}")
         return jsonify({"success": False, "message": str(e)}), 500
 
 
