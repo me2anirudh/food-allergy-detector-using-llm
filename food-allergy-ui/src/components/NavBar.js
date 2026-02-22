@@ -26,6 +26,7 @@ export default function NavBar() {
         <button className="nav-btn" onClick={() => navigate("/dashboard")}>Dashboard</button>
         <button className="nav-btn" onClick={() => navigate("/allergies")}>Edit Allergies</button>
         <button className="nav-btn" onClick={() => navigate("/education")}>Education</button>
+        <button className="nav-btn" onClick={() => navigate("/emergency")}>Emergency</button>
         <button className="nav-btn" onClick={() => navigate("/history")}>History</button>
       </div>
 

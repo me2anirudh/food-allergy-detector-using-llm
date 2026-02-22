@@ -1,0 +1,12 @@
+flask
+flask-cors
+werkzeug
+opencv-python
+pytesseract
+numpy
+pillow
+joblib
+scikit-learn
+python-dotenv
+requests
+huggingface-hub

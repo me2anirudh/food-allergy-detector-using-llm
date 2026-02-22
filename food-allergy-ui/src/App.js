@@ -5,6 +5,7 @@ import Dashboard from "./pages/Dashboard";
 import EditAllergies from "./pages/EditAllergies";
 import EducationalResources from "./pages/EducationalResources";
 import History from "./pages/History";
+import EmergencyHelp from "./pages/EmergencyHelp";
 
 export default function App() {
   return (
@@ -16,8 +17,8 @@ export default function App() {
         <Route path="/allergies" element={<EditAllergies />} />
         <Route path="/education" element={<EducationalResources />} />
         <Route path="/history" element={<History />} />
+        <Route path="/emergency" element={<EmergencyHelp />} />
       </Routes>
     </BrowserRouter>
   );
 }
-

@@ -64,6 +64,34 @@ const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     }),
+
+  getPersonalizedAdvice: (data) =>
+    apiFetch("/llm/personalized_advice", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    }),
+
+  getAlternatives: (data) =>
+    apiFetch("/llm/alternatives", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    }),
+
+  getEmergencyGuidance: (data) =>
+    apiFetch("/llm/emergency_guidance", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    }),
+
+  askFAQ: (data) =>
+    apiFetch("/llm/faq", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    }),
 };
 
 export default api;

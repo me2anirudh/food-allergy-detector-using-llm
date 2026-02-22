@@ -4,9 +4,11 @@
 from flask import Flask, request, jsonify, render_template, redirect, url_for, session
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 import sqlite3
 import os
 import re
+import time
 import cv2
 import pytesseract
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
@@ -14,7 +16,13 @@ import numpy as np
 from PIL import Image
 import joblib
 from dotenv import load_dotenv
-import requests
+from llm_service import (
+    generate_personalized_advice,
+    generate_alternatives,
+    generate_emergency_guidance,
+    answer_faq_question,
+    LLMServiceError,
+)
 
 # Load environment variables from .env
 load_dotenv()
@@ -41,6 +49,43 @@ CORS(app, supports_credentials=True, origins=[
 ###############################
 def get_db():
     return sqlite3.connect("models/users.db", check_same_thread=False)
+
+
+FAQ_RATE_WINDOW_SECONDS = 60
+FAQ_RATE_MAX_REQUESTS = 8
+faq_rate_limiter = {}
+
+
+def _parse_csv_list(text):
+    if not text:
+        return []
+    return [x.strip().lower() for x in str(text).split(",") if x.strip()]
+
+
+def _get_session_user_allergies():
+    if "user_id" not in session:
+        return []
+    db = get_db()
+    user = db.execute(
+        "SELECT allergies FROM users WHERE id=?",
+        (session["user_id"],)
+    ).fetchone()
+    if not user or not user[0]:
+        return []
+    return _parse_csv_list(user[0])
+
+
+def _check_faq_rate_limit(user_key):
+    now = time.time()
+    window_start = now - FAQ_RATE_WINDOW_SECONDS
+    history = faq_rate_limiter.get(user_key, [])
+    history = [t for t in history if t >= window_start]
+    if len(history) >= FAQ_RATE_MAX_REQUESTS:
+        faq_rate_limiter[user_key] = history
+        return False
+    history.append(now)
+    faq_rate_limiter[user_key] = history
+    return True
 
 ###############################
 # REGISTER
@@ -306,22 +351,38 @@ def predict():
 ###################################
 @app.route("/predict_image", methods=["POST"])
 def predict_image():
-    if "image" not in request.files:
-        return jsonify({"error": "No image uploaded"}), 400
+    try:
+        if "image" not in request.files:
+            return jsonify({"error": "No image uploaded"}), 400
 
-    img = request.files["image"]
-    print("Received image:", img.filename)
-    filepath = os.path.join("uploads", img.filename)
-    os.makedirs("uploads", exist_ok=True)
-    img.save(filepath)
-    print("Saved to:", filepath)
+        img = request.files["image"]
+        if not img or not img.filename:
+            return jsonify({"error": "Invalid image upload"}), 400
 
-    ocr_text = ocr_image(filepath)
-    print("OCR text:", ocr_text[:100])
-    result = full_prediction_pipeline(ocr_text)
-    result["ocr_raw_text"] = ocr_text
+        filename = secure_filename(img.filename)
+        print("Received image:", filename)
+        filepath = os.path.join("uploads", filename)
+        os.makedirs("uploads", exist_ok=True)
+        img.save(filepath)
+        print("Saved to:", filepath)
 
-    return jsonify(result)
+        ocr_text = ocr_image(filepath)
+        if not ocr_text.strip():
+            return jsonify({
+                "error": "Could not extract text from image. Try a clearer, well-lit ingredient label photo."
+            }), 422
+
+        print("OCR text:", ocr_text[:100])
+        result = full_prediction_pipeline(ocr_text)
+        result["ocr_raw_text"] = ocr_text
+        return jsonify(result)
+    except pytesseract.TesseractNotFoundError:
+        return jsonify({
+            "error": "Tesseract OCR is not installed or not found at configured path."
+        }), 500
+    except Exception as e:
+        print(f"predict_image error: {str(e)}")
+        return jsonify({"error": f"Scan processing failed: {str(e)}"}), 500
 
 
 @app.route("/save_scan", methods=["POST"])
@@ -402,7 +463,7 @@ def get_history():
 
 @app.route("/get_ai_advice", methods=["POST"])
 def get_ai_advice():
-    """Generate AI advice for allergen detection using Hugging Face"""
+    """Backward-compatible advice endpoint returning summary text."""
     if "user_id" not in session:
         return jsonify({"success": False, "message": "Not logged in"}), 401
 
@@ -413,62 +474,142 @@ def get_ai_advice():
     allergens = data.get("allergens_found", "")
     product_name = data.get("product_name", "this product")
     user_allergies = data.get("user_allergies", "")
+    ingredients_text = data.get("ingredients_text", "")
 
     if not allergens:
         return jsonify({"success": True, "advice": "No allergens detected. This product appears to be safe for you!"})
 
     try:
-        api_key = os.getenv("HUGGINGFACE_API_KEY")
-        if not api_key:
-            print("Error: HUGGINGFACE_API_KEY not found in .env")
-            return jsonify({"success": False, "message": "API key not configured"}), 500
-
-        # Use Hugging Face Inference API
-        hf_api_url = "https://api-inference.huggingface.co/models/mistral-community/Mistral-7B-Instruct-v0.1"
-        headers = {"Authorization": f"Bearer {api_key}"}
-
-        # Craft a detailed prompt for the LLM
-        prompt = f"""You are a helpful food allergy expert. A user has scanned a product called '{product_name}' which contains the following allergens: {allergens}.
-
-The user's known allergies are: {user_allergies if user_allergies else 'not specified'}.
-
-Provide a brief, friendly, and practical safety assessment and advice. Include:
-1. Whether the product is safe based on their allergies
-2. Specific risks or concerns
-3. Recommendations or alternatives
-
-Keep the response to 2-3 sentences, conversational and easy to understand."""
-
-        payload = {
-            "inputs": prompt,
-            "parameters": {"max_length": 200, "temperature": 0.7}
-        }
-
-        print(f"Calling Hugging Face API for allergens: {allergens}")
-        response = requests.post(hf_api_url, headers=headers, json=payload, timeout=15)
-        print(f"HF Response status: {response.status_code}")
-
-        if response.status_code == 200:
-            result = response.json()
-            # Extract text from response
-            if isinstance(result, list) and len(result) > 0:
-                advice = result[0].get("generated_text", "")
-                # Remove the prompt from the generated text
-                if prompt in advice:
-                    advice = advice.replace(prompt, "").strip()
-            else:
-                advice = "Unable to generate advice at this time."
-            
-            return jsonify({"success": True, "advice": advice})
-        else:
-            print(f"Hugging Face API error: {response.status_code} - {response.text}")
-            return jsonify({"success": False, "message": "Failed to generate advice"}), 500
-
-    except requests.exceptions.Timeout:
-        return jsonify({"success": False, "message": "AI advice generation timed out. Try again."}), 500
-    except Exception as e:
+        payload = generate_personalized_advice(
+            product_name=product_name,
+            detected_allergens=_parse_csv_list(allergens),
+            user_allergies=_parse_csv_list(user_allergies) or _get_session_user_allergies(),
+            ingredients_text=ingredients_text,
+        )
+        advice = f"{payload['verdict_summary']} {payload['risk_explanation']}".strip()
+        return jsonify({"success": True, "advice": advice, "details": payload})
+    except LLMServiceError as e:
         print(f"Error in get_ai_advice: {str(e)}")
         return jsonify({"success": False, "message": str(e)}), 500
+    except Exception as e:
+        print(f"Unexpected error in get_ai_advice: {str(e)}")
+        return jsonify({"success": False, "message": "Unexpected error while generating advice"}), 500
+
+
+@app.route("/llm/personalized_advice", methods=["POST"])
+def llm_personalized_advice():
+    if "user_id" not in session:
+        return jsonify({"success": False, "message": "Not logged in"}), 401
+
+    data = request.get_json() or {}
+    product_name = (data.get("product_name") or "this product").strip()
+    detected_allergens = data.get("detected_allergens") or []
+    ingredients_text = data.get("ingredients_text") or ""
+
+    if isinstance(detected_allergens, str):
+        detected_allergens = _parse_csv_list(detected_allergens)
+    else:
+        detected_allergens = [str(x).strip().lower() for x in detected_allergens if str(x).strip()]
+
+    user_allergies = _get_session_user_allergies()
+
+    try:
+        advice = generate_personalized_advice(
+            product_name=product_name,
+            detected_allergens=detected_allergens,
+            user_allergies=user_allergies,
+            ingredients_text=ingredients_text,
+        )
+        return jsonify({"success": True, "advice": advice})
+    except LLMServiceError as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Unexpected error: {str(e)}"}), 500
+
+
+@app.route("/llm/alternatives", methods=["POST"])
+def llm_alternatives():
+    if "user_id" not in session:
+        return jsonify({"success": False, "message": "Not logged in"}), 401
+
+    data = request.get_json() or {}
+    product_name = (data.get("product_name") or "this product").strip()
+    detected_allergens = data.get("detected_allergens") or []
+
+    if isinstance(detected_allergens, str):
+        detected_allergens = _parse_csv_list(detected_allergens)
+    else:
+        detected_allergens = [str(x).strip().lower() for x in detected_allergens if str(x).strip()]
+
+    user_allergies = _get_session_user_allergies()
+
+    try:
+        alternatives = generate_alternatives(
+            product_name=product_name,
+            detected_allergens=detected_allergens,
+            user_allergies=user_allergies,
+        )
+        return jsonify({"success": True, **alternatives})
+    except LLMServiceError as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Unexpected error: {str(e)}"}), 500
+
+
+@app.route("/llm/emergency_guidance", methods=["POST"])
+def llm_emergency_guidance():
+    data = request.get_json() or {}
+
+    suspected_allergen = (data.get("suspected_allergen") or "").strip()
+    symptoms = (data.get("symptoms") or "").strip()
+    has_epinephrine = (data.get("has_epinephrine") or "unknown").strip().lower()
+    age_group = (data.get("age_group") or "adult").strip().lower()
+
+    if not symptoms:
+        return jsonify({"success": False, "message": "symptoms is required"}), 400
+
+    try:
+        guidance = generate_emergency_guidance(
+            suspected_allergen=suspected_allergen or "unknown",
+            symptoms=symptoms,
+            has_epinephrine=has_epinephrine,
+            age_group=age_group,
+        )
+        return jsonify({"success": True, "guidance": guidance})
+    except LLMServiceError as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Unexpected error: {str(e)}"}), 500
+
+
+@app.route("/llm/faq", methods=["POST"])
+def llm_faq():
+    if "user_id" not in session:
+        return jsonify({"success": False, "message": "Not logged in"}), 401
+
+    data = request.get_json() or {}
+    question = (data.get("question") or "").strip()
+    if not question:
+        return jsonify({"success": False, "message": "question is required"}), 400
+    if len(question) > 500:
+        return jsonify({"success": False, "message": "Question is too long. Keep it under 500 characters."}), 400
+
+    blocked_terms = ["ignore previous", "system prompt", "jailbreak", "bypass", "dosage"]
+    q_lower = question.lower()
+    if any(term in q_lower for term in blocked_terms):
+        return jsonify({"success": False, "message": "Question contains disallowed content."}), 400
+
+    user_key = str(session.get("user_id", request.remote_addr or "anon"))
+    if not _check_faq_rate_limit(user_key):
+        return jsonify({"success": False, "message": "Too many requests. Please wait a minute and try again."}), 429
+
+    try:
+        answer = answer_faq_question(question=question, user_allergies=_get_session_user_allergies())
+        return jsonify({"success": True, **answer})
+    except LLMServiceError as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Unexpected error: {str(e)}"}), 500
 
 
 @app.route("/")
