@@ -2,6 +2,7 @@ import json
 import os
 import re
 from typing import Any, Dict, List, Optional
+from urllib.parse import quote
 
 import requests
 
@@ -41,6 +42,7 @@ def _get_hf_config() -> Dict[str, Any]:
     return {
         "api_key": api_key,
         "model_id": os.getenv("HUGGINGFACE_MODEL_ID", "mistralai/Mistral-7B-Instruct-v0.3").strip(),
+        "chat_model_id": os.getenv("HUGGINGFACE_CHAT_MODEL_ID", "Qwen/Qwen2.5-7B-Instruct").strip(),
         "base_url": base_url,
         "timeout_seconds": _get_env_int("HUGGINGFACE_TIMEOUT_SECONDS", 20),
         "max_new_tokens": _get_env_int("HUGGINGFACE_MAX_NEW_TOKENS", 240),
@@ -60,6 +62,13 @@ def _extract_generated_text(response_json: Any) -> str:
     if isinstance(response_json, dict):
         if response_json.get("generated_text"):
             return str(response_json["generated_text"]).strip()
+        # Router chat-completions format
+        choices = response_json.get("choices")
+        if isinstance(choices, list) and choices:
+            message = choices[0].get("message", {})
+            content = message.get("content")
+            if content:
+                return str(content).strip()
         if response_json.get("error"):
             raise LLMServiceError(f"Hugging Face error: {response_json['error']}")
 
@@ -68,9 +77,8 @@ def _extract_generated_text(response_json: Any) -> str:
 
 def _call_huggingface(prompt: str, max_new_tokens: Optional[int] = None, temperature: Optional[float] = None) -> str:
     cfg = _get_hf_config()
-    url = f"{cfg['base_url']}/{cfg['model_id']}"
     headers = {"Authorization": f"Bearer {cfg['api_key']}"}
-    payload = {
+    generation_payload = {
         "inputs": prompt,
         "parameters": {
             "max_new_tokens": max_new_tokens if max_new_tokens is not None else cfg["max_new_tokens"],
@@ -79,28 +87,101 @@ def _call_huggingface(prompt: str, max_new_tokens: Optional[int] = None, tempera
         },
     }
 
+    timeout = cfg["timeout_seconds"]
+    raw_model = cfg["model_id"]
+    encoded_model = quote(raw_model, safe="")
+    base_url = cfg["base_url"].rstrip("/")
+
+    # Try hf-inference style route first, both raw and URL-encoded model IDs.
+    candidate_urls = []
+    if "hf-inference/models" in base_url:
+        candidate_urls = [
+            f"{base_url}/{raw_model}",
+            f"{base_url}/{encoded_model}",
+        ]
+    else:
+        candidate_urls = [f"{base_url}/{raw_model}"]
+
+    last_error = None
+    for url in candidate_urls:
+        try:
+            response = requests.post(url, headers=headers, json=generation_payload, timeout=timeout)
+        except requests.exceptions.Timeout as exc:
+            raise LLMServiceError("Hugging Face request timed out") from exc
+        except requests.RequestException as exc:
+            raise LLMServiceError(f"Network error while calling Hugging Face: {exc}") from exc
+
+        if response.status_code == 410:
+            raise LLMServiceError(
+                "Hugging Face endpoint is deprecated. Use HUGGINGFACE_API_BASE=https://router.huggingface.co/hf-inference/models"
+            )
+
+        if response.status_code == 404:
+            last_error = f"Hugging Face API failed (404) at {url}: {response.text[:200]}"
+            continue
+
+        if response.status_code >= 400:
+            short_body = response.text[:300]
+            raise LLMServiceError(f"Hugging Face API failed ({response.status_code}): {short_body}")
+
+        try:
+            response_json = response.json()
+        except ValueError as exc:
+            raise LLMServiceError("Invalid JSON response from Hugging Face") from exc
+        return _extract_generated_text(response_json)
+
+    # Fallback for Inference Providers tokens via chat-completions router endpoint.
+    chat_url = "https://router.huggingface.co/v1/chat/completions"
+    chat_model = cfg["chat_model_id"] or raw_model
+    chat_payload = {
+        "model": chat_model,
+        "messages": [{"role": "user", "content": prompt}],
+        "max_tokens": max_new_tokens if max_new_tokens is not None else cfg["max_new_tokens"],
+        "temperature": temperature if temperature is not None else cfg["temperature"],
+    }
     try:
-        response = requests.post(url, headers=headers, json=payload, timeout=cfg["timeout_seconds"])
+        chat_response = requests.post(chat_url, headers=headers, json=chat_payload, timeout=timeout)
     except requests.exceptions.Timeout as exc:
-        raise LLMServiceError("Hugging Face request timed out") from exc
+        raise LLMServiceError("Hugging Face chat-completions request timed out") from exc
     except requests.RequestException as exc:
-        raise LLMServiceError(f"Network error while calling Hugging Face: {exc}") from exc
+        raise LLMServiceError(f"Network error while calling Hugging Face chat-completions: {exc}") from exc
 
-    if response.status_code == 410:
-        raise LLMServiceError(
-            "Hugging Face endpoint is deprecated. Use HUGGINGFACE_API_BASE=https://router.huggingface.co/hf-inference/models"
-        )
+    if chat_response.status_code >= 400:
+        # If the configured model is not chat-compatible, retry once with fallback chat model.
+        try:
+            err_json = chat_response.json()
+        except Exception:
+            err_json = {}
 
-    if response.status_code >= 400:
-        short_body = response.text[:300]
-        raise LLMServiceError(f"Hugging Face API failed ({response.status_code}): {short_body}")
+        err_text = json.dumps(err_json) if err_json else chat_response.text
+        if chat_response.status_code == 400 and "model_not_supported" in err_text and chat_model != "Qwen/Qwen2.5-7B-Instruct":
+            retry_payload = {
+                "model": "Qwen/Qwen2.5-7B-Instruct",
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": max_new_tokens if max_new_tokens is not None else cfg["max_new_tokens"],
+                "temperature": temperature if temperature is not None else cfg["temperature"],
+            }
+            try:
+                retry_response = requests.post(chat_url, headers=headers, json=retry_payload, timeout=timeout)
+                if retry_response.status_code < 400:
+                    try:
+                        retry_json = retry_response.json()
+                    except ValueError as exc:
+                        raise LLMServiceError("Invalid JSON response from Hugging Face chat-completions fallback") from exc
+                    return _extract_generated_text(retry_json)
+            except requests.RequestException:
+                pass
+
+        short_body = chat_response.text[:300]
+        suffix = f" Previous error: {last_error}" if last_error else ""
+        raise LLMServiceError(f"Hugging Face API failed ({chat_response.status_code}): {short_body}{suffix}")
 
     try:
-        response_json = response.json()
+        chat_json = chat_response.json()
     except ValueError as exc:
-        raise LLMServiceError("Invalid JSON response from Hugging Face") from exc
+        raise LLMServiceError("Invalid JSON response from Hugging Face chat-completions") from exc
 
-    return _extract_generated_text(response_json)
+    return _extract_generated_text(chat_json)
 
 
 def _extract_json_object(text: str) -> Dict[str, Any]:

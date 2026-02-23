@@ -6,6 +6,7 @@ import EditAllergies from "./pages/EditAllergies";
 import EducationalResources from "./pages/EducationalResources";
 import History from "./pages/History";
 import EmergencyHelp from "./pages/EmergencyHelp";
+import SmartFAQ from "./pages/SmartFAQ";
 
 export default function App() {
   return (
@@ -16,6 +17,7 @@ export default function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/allergies" element={<EditAllergies />} />
         <Route path="/education" element={<EducationalResources />} />
+        <Route path="/smart-faq" element={<SmartFAQ />} />
         <Route path="/history" element={<History />} />
         <Route path="/emergency" element={<EmergencyHelp />} />
       </Routes>

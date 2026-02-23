@@ -1,18 +1,9 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import NavBar from "../components/NavBar";
-import api from "../api";
 
 export default function EducationalResources() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [chatInput, setChatInput] = useState("");
-  const [chatLoading, setChatLoading] = useState(false);
-  const [chatMessages, setChatMessages] = useState([
-    {
-      role: "assistant",
-      text: "Ask any food-allergy question. I can explain symptoms, label reading, and prevention steps.",
-    },
-  ]);
   const navigate = useNavigate();
 
   const allergens = [
@@ -35,32 +26,6 @@ export default function EducationalResources() {
 
   const filteredAllergens = allergens.filter((allergen) => allergen.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
-  const sendQuestion = async () => {
-    const question = chatInput.trim();
-    if (!question) return;
-
-    const next = [...chatMessages, { role: "user", text: question }];
-    setChatMessages(next);
-    setChatInput("");
-    setChatLoading(true);
-
-    try {
-      const res = await api.askFAQ({ question });
-      const json = await res.json();
-      if (!json.success) {
-        setChatMessages([...next, { role: "assistant", text: json.message || "Could not answer right now." }]);
-      } else {
-        const answer = `${json.answer}\n\n${json.safety_disclaimer}`;
-        setChatMessages([...next, { role: "assistant", text: answer }]);
-      }
-    } catch (err) {
-      console.error(err);
-      setChatMessages([...next, { role: "assistant", text: "Error contacting FAQ assistant." }]);
-    } finally {
-      setChatLoading(false);
-    }
-  };
-
   return (
     <div className="page">
       <NavBar />
@@ -72,6 +37,7 @@ export default function EducationalResources() {
           <button onClick={() => navigate("/dashboard")}>Dashboard</button>
           <button onClick={() => navigate("/allergies")}>Edit Allergies</button>
           <button className="active">Educational Resources</button>
+          <button onClick={() => navigate("/smart-faq")}>Smart FAQ</button>
           <button onClick={() => navigate("/history")}>History</button>
           <button onClick={() => navigate("/emergency")}>Emergency Help</button>
         </div>
@@ -94,34 +60,6 @@ export default function EducationalResources() {
                 <p><strong>Prevention Tips:</strong> {allergen.prevention}</p>
               </div>
             ))}
-          </div>
-        </section>
-
-        <section>
-          <h2>Smart FAQ Chat</h2>
-          <div style={{ border: "1px solid #d8e8ff", borderRadius: 8, background: "#f8fbff", padding: 12 }}>
-            <div style={{ maxHeight: 260, overflowY: "auto", marginBottom: 10 }}>
-              {chatMessages.map((m, i) => (
-                <div key={i} style={{ marginBottom: 8, textAlign: m.role === "user" ? "right" : "left" }}>
-                  <div style={{ display: "inline-block", padding: 10, borderRadius: 8, background: m.role === "user" ? "#dcf3e6" : "#ffffff", border: "1px solid #e1e8f2", whiteSpace: "pre-wrap" }}>
-                    {m.text}
-                  </div>
-                </div>
-              ))}
-              {chatLoading && <p style={{ margin: 0, color: "#666" }}>Thinking...</p>}
-            </div>
-            <div style={{ display: "flex", gap: 8 }}>
-              <input
-                type="text"
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                placeholder="What are signs of anaphylaxis?"
-                style={{ flex: 1, padding: 10, border: "1px solid #ccd9ea", borderRadius: 6 }}
-                maxLength={500}
-                onKeyDown={(e) => e.key === "Enter" && sendQuestion()}
-              />
-              <button onClick={sendQuestion} disabled={chatLoading || !chatInput.trim()}>Ask</button>
-            </div>
           </div>
         </section>
 

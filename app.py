@@ -87,6 +87,36 @@ def _check_faq_rate_limit(user_key):
     faq_rate_limiter[user_key] = history
     return True
 
+
+def _local_faq_fallback(question):
+    q = (question or "").lower()
+    if "anaphylaxis" in q or "severe" in q:
+        answer = (
+            "Signs of a severe reaction can include trouble breathing, throat tightness, "
+            "wheezing, dizziness, fainting, or widespread swelling. Use prescribed epinephrine "
+            "immediately and call emergency services."
+        )
+    elif "symptom" in q:
+        answer = (
+            "Common allergy symptoms include hives, itching, swelling, stomach pain, vomiting, "
+            "cough, wheezing, and breathing difficulty. Severe or rapidly worsening symptoms need urgent care."
+        )
+    elif "label" in q or "ingredient" in q:
+        answer = (
+            "Check allergen statements, ingredient lists, and advisory warnings like 'may contain'. "
+            "If labeling is unclear, avoid the product."
+        )
+    else:
+        answer = (
+            "For food allergy safety, avoid known triggers, read labels carefully, prevent cross-contact, "
+            "and keep an emergency action plan with epinephrine if prescribed."
+        )
+
+    return {
+        "answer": answer,
+        "safety_disclaimer": "This is educational information, not medical diagnosis.",
+    }
+
 ###############################
 # REGISTER
 ###############################
@@ -607,9 +637,13 @@ def llm_faq():
         answer = answer_faq_question(question=question, user_allergies=_get_session_user_allergies())
         return jsonify({"success": True, **answer})
     except LLMServiceError as e:
-        return jsonify({"success": False, "message": str(e)}), 500
+        print(f"FAQ LLM unavailable: {str(e)}")
+        fallback = _local_faq_fallback(question)
+        return jsonify({"success": True, **fallback})
     except Exception as e:
-        return jsonify({"success": False, "message": f"Unexpected error: {str(e)}"}), 500
+        print(f"Unexpected FAQ error: {str(e)}")
+        fallback = _local_faq_fallback(question)
+        return jsonify({"success": True, **fallback})
 
 
 @app.route("/")
