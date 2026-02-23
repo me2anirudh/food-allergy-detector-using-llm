@@ -49,9 +49,9 @@ export default function EditAllergies() {
 
   return (
     <div className="page">
-      <div style={{ width: "100%", maxWidth: 640 }}>
+      <div className="tab-shell fade-in">
         <NavBar />
-        <div className="card">
+        <div className="card tab-card">
           <div className="card-header">
             <div>
               <h2>Edit Allergies</h2>
@@ -59,26 +59,26 @@ export default function EditAllergies() {
             </div>
           </div>
 
-        <input
-          value={allergies}
-          onChange={e => setAllergies(e.target.value)}
-          placeholder="milk, egg, peanut"
-        />
+          <input
+            value={allergies}
+            onChange={e => setAllergies(e.target.value)}
+            placeholder="milk, egg, peanut"
+          />
 
-        <button onClick={() => save(allergies)} disabled={loading}>
-          {loading ? "Saving..." : "Save"}
-        </button>
+          <button onClick={() => save(allergies)} disabled={loading}>
+            {loading ? "Saving..." : "Save"}
+          </button>
 
-        <button className="secondary" onClick={clearAllergies} disabled={loading}>
-          Clear Allergies
-        </button>
+          <button className="secondary" onClick={clearAllergies} disabled={loading}>
+            Clear Allergies
+          </button>
 
-        {statusMsg && <p className="statusMsg fade-in" style={{ color: "#1b7f4b", fontWeight: 600, marginTop: 12 }}>{statusMsg}</p>}
+          {statusMsg && <p className="statusMsg fade-in" style={{ color: "#1b7f4b", fontWeight: 600, marginTop: 12 }}>{statusMsg}</p>}
 
-        <button className="secondary" onClick={() => navigate("/dashboard")}>Back to Dashboard</button>
+          <button className="secondary" onClick={() => navigate("/dashboard")}>Back to Dashboard</button>
+        </div>
       </div>
     </div>
-  </div>
   );
 }
 

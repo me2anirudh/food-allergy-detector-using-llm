@@ -13,7 +13,12 @@ export default function EducationalResources() {
     { name: "Eggs", symptoms: "Skin reactions, gastrointestinal issues", prevalence: "Affects 1-2% of young children; often outgrown", prevention: "Avoid baked goods; check for egg derivatives" },
     { name: "Wheat/Gluten", symptoms: "Bloating, diarrhea, skin issues (celiac disease)", prevalence: "Celiac affects 1% of people", prevention: "Gluten-free diet; avoid cross-contamination" },
     { name: "Soy", symptoms: "Hives, vomiting, anaphylaxis", prevalence: "Affects less than 1% of children", prevention: "Avoid soy products; hidden in many foods" },
-    { name: "Fish/Shellfish", symptoms: "Severe reactions common; can be life-threatening", prevalence: "Affects 1-2% of adults", prevention: "Avoid all seafood; restaurant caution advised" },
+    { name: "Fish", symptoms: "Hives, swelling, wheezing, severe reactions in sensitive individuals", prevalence: "Affects around 0.5-1% of people; often lifelong", prevention: "Avoid fish ingredients, fish sauce, and shared fryers" },
+    { name: "Shellfish", symptoms: "Hives, breathing difficulty, abdominal pain, anaphylaxis", prevalence: "One of the most common adult food allergies", prevention: "Avoid shrimp, crab, lobster, and cross-contact at restaurants" },
+    { name: "Sesame", symptoms: "Skin reactions, swelling, cough, and possible anaphylaxis", prevalence: "Increasing globally; now a major declared allergen in many regions", prevention: "Check breads, sauces, and spice blends for sesame sources" },
+    { name: "Mustard", symptoms: "Oral itching, hives, digestive upset, severe reactions in some cases", prevalence: "More common in parts of Europe and South Asia", prevention: "Read condiment, dressing, and seasoning labels carefully" },
+    { name: "Celery", symptoms: "Itchy mouth, swelling, respiratory symptoms, possible severe reactions", prevalence: "Notable in Europe; can be linked with pollen-food syndrome", prevention: "Watch soups, stocks, seasoning mixes, and processed foods" },
+    { name: "Lupin", symptoms: "Hives, wheeze, swelling, or anaphylaxis in peanut-allergic individuals", prevalence: "Less common but clinically important", prevention: "Avoid lupin flour in bakery and gluten-free products" },
   ];
 
   const faqs = [
@@ -29,7 +34,7 @@ export default function EducationalResources() {
   return (
     <div className="page">
       <NavBar />
-      <div className="container fade-in">
+      <div className="container education-container fade-in">
         <h1>Educational Resources</h1>
         <p>Learn about food allergies, common allergens, and safe habits.</p>
 

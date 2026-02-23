@@ -172,9 +172,9 @@ export default function Dashboard() {
 
   return (
     <div className="page">
-      <div style={{ width: "100%", maxWidth: 760 }}>
+      <div className="tab-shell fade-in">
         <NavBar />
-        <div className="card">
+        <div className="card tab-card">
           <div className="card-header">
             <div>
               <h2>Scan Product</h2>
