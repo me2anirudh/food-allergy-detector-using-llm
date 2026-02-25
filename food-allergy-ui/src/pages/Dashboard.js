@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api";
 import NavBar from "../components/NavBar";
+import logo from "../assets/allershield_logo.png";
 
 export default function Dashboard() {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -175,11 +176,25 @@ export default function Dashboard() {
       <div className="tab-shell fade-in">
         <NavBar />
         <div className="card tab-card">
-          <div className="card-header">
+          <div className="card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
             <div>
               <h2>Scan Product</h2>
               <div className="brand-sub">Upload product image to check against your saved allergies</div>
             </div>
+            <img
+              src={logo}
+              alt="AllerShield logo"
+              style={{
+                width: 72,
+                height: 72,
+                objectFit: "contain",
+                background: "#ffffff",
+                border: "1px solid #d9ece0",
+                borderRadius: 10,
+                padding: 6,
+                boxShadow: "0 4px 14px rgba(0,0,0,0.08)",
+              }}
+            />
           </div>
 
           <div className="card-body stacked">
@@ -221,7 +236,10 @@ export default function Dashboard() {
                 <button onClick={() => navigate("/allergies")} className="secondary" style={{ minWidth: 140 }}>
                   Edit Allergies
                 </button>
-                <button onClick={() => navigate("/emergency")} className="secondary" style={{ minWidth: 140 }}>
+                <button
+                  onClick={() => navigate("/emergency")}
+                  style={{ minWidth: 140, background: "#c62828", color: "#ffffff" }}
+                >
                   Emergency Help
                 </button>
               </div>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api";
+import logo from "../assets/allershield_logo.png";
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -29,11 +30,31 @@ export default function Login() {
 
   return (
     <div className="page center">
-      <div className="card auth-card">
+      <div className="card auth-card" style={{ width: 430 }}>
         <div className="card-header">
-          <div>
-            <h2>Food Allergy Scanner</h2>
-            <div className="brand-sub">Securely scan product ingredients</div>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 14 }}>
+            <div
+              style={{
+                width: 138,
+                height: 138,
+                borderRadius: 16,
+                background: "#ffffff",
+                border: "1px solid #d9ece0",
+                boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: 12,
+                padding: 10,
+              }}
+            >
+              <img src={logo} alt="AllerShield logo" style={{ width: 118, height: 118, objectFit: "contain" }} />
+            </div>
+            <h2 style={{ margin: 0, fontSize: 30, letterSpacing: 0.2 }}>
+              <span style={{ color: "#4f86e8" }}>Aller</span>
+              <span style={{ color: "#49a86f" }}>Shield</span>
+            </h2>
+            <div className="brand-sub" style={{ marginTop: 6 }}>Securely scan product ingredients</div>
           </div>
         </div>
 

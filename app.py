@@ -1,7 +1,7 @@
 ###############################
 # IMPORTS
 ###############################
-from flask import Flask, request, jsonify, render_template, redirect, url_for, session
+from flask import Flask, request, jsonify, redirect, url_for, session
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
@@ -176,9 +176,8 @@ def login():
 @app.route("/dashboard")
 def dashboard():
     if "user_id" not in session:
-        return redirect(url_for("login"))
-
-    return render_template("dashboard.html", username=session["username"])
+        return jsonify({"success": False, "message": "Not logged in"}), 401
+    return jsonify({"success": True, "username": session.get("username", "")})
 
 
 ###############################

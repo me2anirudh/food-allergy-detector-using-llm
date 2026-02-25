@@ -1,6 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api";
+import logo from "../assets/allershield_logo.png";
 
 export default function NavBar() {
   const navigate = useNavigate();
@@ -32,9 +33,13 @@ export default function NavBar() {
         margin: 0,
       }}
     >
-      <div className="navbar-left" style={{ color: "#fff" }}>
-        <div className="logo">🌿</div>
-        <div className="app-name" style={{ color: "#fff" }}>Food Allergy Scanner</div>
+      <div className="navbar-left" style={{ color: "#fff", display: "flex", alignItems: "center", gap: 10 }}>
+        <img
+          src={logo}
+          alt="AllerShield logo"
+          style={{ width: 34, height: 34, objectFit: "contain", borderRadius: 6, background: "#fff", padding: 2 }}
+        />
+        <div className="app-name" style={{ color: "#fff" }}>AllerShield</div>
       </div>
 
       <div className="navbar-center" style={{ display: "flex", gap: 10 }}>
